@@ -16,15 +16,18 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Atualiza a senha do usuário no Supabase
-    const { data, error } = await supabase.auth.admin.updateUserByEmail(email, { password: senha });
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    // Primeiro, busca o usuário pelo email
+    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+    
+    if (listError) {
+      return res.status(500).json({ error: listError.message });
     }
 
-    return res.status(200).json({ message: 'Senha definida com sucesso!', user: data });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
+    const user = users.users.find(u => u.email === email);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Atualiza a senha do usuário
+    const { data, error } = await
