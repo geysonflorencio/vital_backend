@@ -1,33 +1,26 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
-  const { email, senha } = req.body;
-
-  if (!email || !senha) {
-    return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
-  }
-
   try {
-    // Primeiro, busca o usuário pelo email
-    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    if (listError) {
-      return res.status(500).json({ error: listError.message });
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({ error: 'Variáveis de ambiente não configuradas' });
     }
 
-    const user = users.users.find(u => u.email === email);
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
-    if (!user) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-
-    // Atualiza a senha do usuário
-    const { data, error } = await
+    return res.status(200).json({ 
+      message: 'Conexão com Supabase OK!', 
+      url: supabaseUrl ? 'Configurada' : 'Não configurada',
+      key: supabaseKey ? 'Configurada' : 'Não configurada'
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
