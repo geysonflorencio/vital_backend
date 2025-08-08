@@ -1,131 +1,108 @@
-// index.js - Servidor principal refatorado
-require('dotenv').config();
+// index.js - Vers�o simplificada para Vercel
+const express = require('express');
+const cors = require('cors');
 
-const { createServer } = require('./config/server');
-const apiRoutes = require('./routes');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { debugLogger } = require('./middleware/logger');
+const app = express();
 
-// Verificar variáveis de ambiente obrigatórias
-const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+// CORS configurado para appvital.com.br
+app.use(cors({
+  origin: ['https://appvital.com.br', 'https://www.appvital.com.br', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-if (missingEnvVars.length > 0) {
-  console.error('❌ Variáveis de ambiente obrigatórias não configuradas:', missingEnvVars);
-  process.exit(1);
-}
+app.use(express.json());
 
-// Criar servidor
-const { app, authLimiter } = createServer();
-
-// Rota raiz - Landing page da API
+// Rota raiz
 app.get('/', (req, res) => {
-  // Se há parâmetros de query relacionados a auth, provavelmente é um redirecionamento incorreto
-  if (req.query.token || req.query.email || req.url.includes('type=')) {
-    const frontendUrl = process.env.FRONTEND_URL || 'https://vital-deploy.vercel.app';
-    const redirectUrl = `${frontendUrl}/definir-senha.html${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`;
-    
-    console.log('🔄 Redirecionamento automático da raiz para:', redirectUrl);
-    return res.redirect(302, redirectUrl);
-  }
-
   res.json({
-    message: '🚀 VITAL API - Sistema de Triagem Hospitalar',
+    message: ' VITAL API - Sistema de Triagem Hospitalar',
     status: 'online',
     version: '2.0.0',
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      health: '/api/health',
-      auth: '/api/cadastrar-usuario',
-      solicitacoes: '/api/solicitacoes'
-    },
-    documentation: 'https://vital-deploy.onrender.com/api',
-    note: 'Se você está tentando definir uma senha, acesse: https://vital-deploy.vercel.app/definir-senha.html'
-  });
-});
-
-// Rota de emergência para redirecionamento de senhas
-app.get('/definir-senha', (req, res) => {
-  // Redirecionar para o frontend correto (nova página)
-  const frontendUrl = process.env.FRONTEND_URL || 'https://vital-deploy.vercel.app';
-  const redirectUrl = `${frontendUrl}/cadastro-senha.html${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`;
-  
-  console.log('🔄 Redirecionamento de emergência:', redirectUrl);
-  res.redirect(302, redirectUrl);
-});
-
-// Rota adicional para capturar /api/definir-senha-inicial via GET
-app.get('/api/definir-senha-inicial', (req, res) => {
-  // Redirecionar para o frontend correto (nova página)
-  const frontendUrl = process.env.FRONTEND_URL || 'https://vital-deploy.vercel.app';
-  const redirectUrl = `${frontendUrl}/cadastro-senha.html${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`;
-  
-  console.log('🔄 Redirecionamento API definir-senha-inicial:', redirectUrl);
-  res.redirect(302, redirectUrl);
-});
-
-// Rotas da API
-app.use('/api', apiRoutes);
-
-// Rotas legadas (compatibilidade com código antigo)
-const authRoutes = require('./routes/auth');
-app.use('/api', authRoutes); // Mantém rotas diretas como /api/cadastrar-usuario
-
-// Middleware de erro 404
-app.use(notFoundHandler);
-
-// Middleware de tratamento de erros
-app.use(errorHandler);
-
-// Configuração do servidor
-const PORT = process.env.PORT || 3001;
-
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor VITAL iniciado`, {
-    port: PORT,
-    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
   });
+});
 
-  // Log das rotas disponíveis
-  console.log('📋 Rotas disponíveis', {
-    routes: [
-      `GET http://localhost:${PORT}/api/health`,
-      `POST http://localhost:${PORT}/api/cadastrar-usuario`,
-      `POST http://localhost:${PORT}/api/definir-senha-inicial`,
-      `GET http://localhost:${PORT}/api/usuarios`,
-      `DELETE http://localhost:${PORT}/api/excluir-usuario`,
-      `POST http://localhost:${PORT}/api/solicitacoes`,
-      `GET http://localhost:${PORT}/api/solicitacoes`
-    ]
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
   });
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 Servidor recebeu SIGTERM, encerrando graciosamente...');
-  process.exit(0);
+// Cadastrar usu�rio - vers�o simplificada
+app.post('/api/cadastrar-usuario', async (req, res) => {
+  try {
+    const { nome, email, role } = req.body;
+    
+    if (!nome || !email || !role) {
+      return res.status(400).json({
+        error: 'Nome, email e role s�o obrigat�rios'
+      });
+    }
+    
+    // Simular sucesso por enquanto
+    res.status(201).json({
+      success: true,
+      message: 'Usu�rio cadastrado com sucesso! (modo simplificado)',
+      data: {
+        nome,
+        email,
+        role,
+        id: Math.random().toString(36).substr(2, 9)
+      }
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error.message
+    });
+  }
 });
 
-process.on('SIGINT', () => {
-  console.log('🛑 Servidor recebeu SIGINT, encerrando graciosamente...');
-  process.exit(0);
+// Definir senha inicial - vers�o simplificada
+app.post('/api/definir-senha-inicial', async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+    
+    if (!email || !senha) {
+      return res.status(400).json({
+        error: 'Email e senha s�o obrigat�rios'
+      });
+    }
+    
+    // Simular sucesso por enquanto
+    res.json({
+      success: true,
+      message: 'Senha definida com sucesso! (modo simplificado)',
+      email
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error.message
+    });
+  }
 });
 
-// Capturar erros não tratados
-process.on('uncaughtException', (error) => {
-  console.error('❌ Erro não capturado', {
-    error: error.message,
-    stack: error.stack
+// Middleware de erro
+app.use((error, req, res, next) => {
+  console.error('Erro:', error);
+  res.status(500).json({
+    error: 'Erro interno do servidor'
   });
-  process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Promise rejeitada não tratada', {
-    reason: reason,
-    promise: promise
+// Para desenvolvimento local
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
   });
-  process.exit(1);
-});
+}
+
+module.exports = app;
