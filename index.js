@@ -219,13 +219,16 @@ app.get('/api/usuarios', async (req, res) => {
 // Excluir usuário - rota específica que o frontend está chamando
 app.delete('/api/excluir-usuario', async (req, res) => {
   try {
-    const { userId } = req.body;
+    // Aceitar tanto userId quanto id para compatibilidade
+    const { userId, id } = req.body;
+    const userIdToDelete = userId || id;
     
-    console.log('🗑️ Excluindo usuário:', userId);
+    console.log('🗑️ Excluindo usuário:', userIdToDelete);
+    console.log('📋 Body recebido:', req.body);
     
-    if (!userId) {
+    if (!userIdToDelete) {
       return res.status(400).json({
-        error: 'ID do usuário é obrigatório'
+        error: 'ID do usuário é obrigatório (envie userId ou id)'
       });
     }
     
@@ -233,7 +236,7 @@ app.delete('/api/excluir-usuario', async (req, res) => {
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
-      .eq('id', userId);
+      .eq('id', userIdToDelete);
 
     if (profileError) {
       console.error('❌ Erro ao deletar perfil:', profileError);
@@ -241,14 +244,14 @@ app.delete('/api/excluir-usuario', async (req, res) => {
     }
     
     // Depois, deletar da autenticação do Supabase
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    const { error: authError } = await supabase.auth.admin.deleteUser(userIdToDelete);
     
     if (authError) {
       console.error('⚠️ Aviso: Erro ao deletar da auth (perfil já foi deletado):', authError.message);
       // Não vamos falhar aqui porque o perfil já foi deletado
     }
     
-    console.log('✅ Usuário excluído com sucesso:', userId);
+    console.log('✅ Usuário excluído com sucesso:', userIdToDelete);
     res.json({ 
       success: true,
       message: "Usuário excluído com sucesso" 
