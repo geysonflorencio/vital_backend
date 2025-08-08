@@ -216,11 +216,43 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
-// REMOVIDO: Rota duplicada /api/excluir-usuario
-// A exclusão agora é tratada na arquitetura modular em:
-//   DELETE /api/auth/excluir-usuario (principal)
-//   DELETE /api/excluir-usuario (alias legacy definido em routes/index.js)
-// Mantido aqui apenas o comentário para evitar reintrodução acidental.
+// Rota de exclusão (ALIAS LEGACY) - necessária enquanto frontend não migra para /api/auth/excluir-usuario
+app.delete('/api/excluir-usuario', async (req, res) => {
+  try {
+    const { user_id, id, userId } = req.body;
+    const userIdToDelete = user_id || id || userId;
+
+    console.log('🗑️ [LEGACY] Excluir usuário (alias):', { user_id, id, userId, resolved: userIdToDelete });
+
+    if (!userIdToDelete) {
+      return res.status(400).json({
+        error: 'ID do usuário é obrigatório (user_id, id ou userId)'
+      });
+    }
+
+    // Deletar profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userIdToDelete);
+
+    if (profileError) {
+      console.error('❌ Erro ao deletar perfil (legacy):', profileError);
+      throw profileError;
+    }
+
+    // Deletar auth
+    const { error: authError } = await supabase.auth.admin.deleteUser(userIdToDelete);
+    if (authError) {
+      console.warn('⚠️ Erro ao deletar na auth (perfil já removido):', authError.message);
+    }
+
+    res.json({ success: true, message: 'Usuário excluído com sucesso (legacy alias)' });
+  } catch (error) {
+    console.error('💥 Erro ao excluir usuário (legacy):', error);
+    res.status(500).json({ error: 'Erro ao excluir usuário', details: error.message });
+  }
+});
 
 // Middleware de erro
 app.use((error, req, res, next) => {
