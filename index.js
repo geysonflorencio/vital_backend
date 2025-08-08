@@ -219,16 +219,16 @@ app.get('/api/usuarios', async (req, res) => {
 // Excluir usuário - rota específica que o frontend está chamando
 app.delete('/api/excluir-usuario', async (req, res) => {
   try {
-    // Aceitar tanto userId quanto id para compatibilidade
-    const { userId, id } = req.body;
-    const userIdToDelete = userId || id;
+    // Aceitar tanto userId, id quanto user_id para compatibilidade
+    const { userId, id, user_id } = req.body;
+    const userIdToDelete = userId || id || user_id;
     
     console.log('🗑️ Excluindo usuário:', userIdToDelete);
     console.log('📋 Body recebido:', req.body);
     
     if (!userIdToDelete) {
       return res.status(400).json({
-        error: 'ID do usuário é obrigatório (envie userId ou id)'
+        error: 'ID do usuário é obrigatório (envie userId, id ou user_id)'
       });
     }
     
