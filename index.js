@@ -1,11 +1,15 @@
-// index.js - Versão com Supabase integrado
+// index.js - Versï¿½o com Supabase integrado
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 
+// Importar rotas
+const hospitaisRoutes = require('./routes/hospitais');
+const usuariosRoutes = require('./routes/usuarios');
+
 const app = express();
 
-// Configuração do Supabase
+// Configuraï¿½ï¿½o do Supabase
 const supabaseUrl = process.env.SUPABASE_URL || 'https://aeysoqtbencykavivgoe.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFleXNvcXRiZW5jeWthdml2Z29lIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTE4MTY1OSwiZXhwIjoyMDY0NzU3NjU5fQ.g64X3iebdB_TY_FWd6AI8mlej4uKMrKiFLG11z6hZlQ';
 
@@ -20,6 +24,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Registrar rotas
+app.use('/api/hospitais', hospitaisRoutes);
+app.use('/api/usuarios', usuariosRoutes);
 
 // Rota raiz
 app.get('/', (req, res) => {
@@ -41,7 +49,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Cadastrar usuário - com Supabase real
+// Cadastrar usuï¿½rio - com Supabase real
 app.post('/api/cadastrar-usuario', async (req, res) => {
   try {
     const { nome, email, role, hospital_id } = req.body;
@@ -50,14 +58,14 @@ app.post('/api/cadastrar-usuario', async (req, res) => {
     
     if (!nome || !email || !role) {
       return res.status(400).json({
-        error: 'Nome, email e role são obrigatórios'
+        error: 'Nome, email e role sï¿½o obrigatï¿½rios'
       });
     }
     
-    // Criar usuário na autenticação do Supabase
+    // Criar usuï¿½rio na autenticaï¿½ï¿½o do Supabase
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: email,
-      password: Math.random().toString(36).slice(-8), // Senha temporária
+      password: Math.random().toString(36).slice(-8), // Senha temporï¿½ria
       email_confirm: true,
       user_metadata: {
         nome_completo: nome,
@@ -66,15 +74,15 @@ app.post('/api/cadastrar-usuario', async (req, res) => {
     });
     
     if (authError) {
-      console.error(' Erro ao criar usuário na auth:', authError);
+      console.error(' Erro ao criar usuï¿½rio na auth:', authError);
       return res.status(400).json({
-        error: 'Erro ao criar usuário: ' + authError.message
+        error: 'Erro ao criar usuï¿½rio: ' + authError.message
       });
     }
     
-    console.log(' Usuário criado na auth:', authUser.user.id);
+    console.log(' Usuï¿½rio criado na auth:', authUser.user.id);
     
-    // Criar perfil do usuário na tabela profiles
+    // Criar perfil do usuï¿½rio na tabela profiles
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .insert({
@@ -99,7 +107,7 @@ app.post('/api/cadastrar-usuario', async (req, res) => {
     
     res.status(201).json({
       success: true,
-      message: 'Usuário cadastrado com sucesso no banco de dados!',
+      message: 'Usuï¿½rio cadastrado com sucesso no banco de dados!',
       data: {
         id: authUser.user.id,
         nome,
@@ -128,17 +136,17 @@ app.post('/api/definir-senha-inicial', async (req, res) => {
     
     if (!email || !senha) {
       return res.status(400).json({
-        error: 'Email e senha são obrigatórios'
+        error: 'Email e senha sï¿½o obrigatï¿½rios'
       });
     }
     
-    // Buscar usuário pelo email
+    // Buscar usuï¿½rio pelo email
     const { data: users, error: listError } = await supabase.auth.admin.listUsers();
     
     if (listError) {
-      console.error(' Erro ao listar usuários:', listError);
+      console.error(' Erro ao listar usuï¿½rios:', listError);
       return res.status(500).json({
-        error: 'Erro ao buscar usuário'
+        error: 'Erro ao buscar usuï¿½rio'
       });
     }
     
@@ -146,7 +154,7 @@ app.post('/api/definir-senha-inicial', async (req, res) => {
     
     if (!user) {
       return res.status(404).json({
-        error: 'Usuário não encontrado'
+        error: 'Usuï¿½rio nï¿½o encontrado'
       });
     }
     
@@ -181,7 +189,7 @@ app.post('/api/definir-senha-inicial', async (req, res) => {
   }
 });
 
-// Listar usuários
+// Listar usuï¿½rios
 app.get('/api/usuarios', async (req, res) => {
   try {
     const { data: profiles, error } = await supabase
@@ -200,9 +208,9 @@ app.get('/api/usuarios', async (req, res) => {
     });
     
   } catch (error) {
-    console.error(' Erro ao listar usuários:', error);
+    console.error(' Erro ao listar usuï¿½rios:', error);
     res.status(500).json({
-      error: 'Erro ao listar usuários',
+      error: 'Erro ao listar usuï¿½rios',
       details: error.message
     });
   }
