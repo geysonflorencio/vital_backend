@@ -216,6 +216,53 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
+// Excluir usuário - rota específica que o frontend está chamando
+app.delete('/api/excluir-usuario', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    console.log('🗑️ Excluindo usuário:', userId);
+    
+    if (!userId) {
+      return res.status(400).json({
+        error: 'ID do usuário é obrigatório'
+      });
+    }
+    
+    // Primeiro, deletar da tabela profiles
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('❌ Erro ao deletar perfil:', profileError);
+      throw profileError;
+    }
+    
+    // Depois, deletar da autenticação do Supabase
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    
+    if (authError) {
+      console.error('⚠️ Aviso: Erro ao deletar da auth (perfil já foi deletado):', authError.message);
+      // Não vamos falhar aqui porque o perfil já foi deletado
+    }
+    
+    console.log('✅ Usuário excluído com sucesso:', userId);
+    res.json({ 
+      success: true,
+      message: "Usuário excluído com sucesso" 
+    });
+    
+  } catch (error) {
+    console.error('💥 Erro ao excluir usuário:', error);
+    res.status(500).json({
+      error: 'Erro ao excluir usuário',
+      details: error.message
+    });
+  }
+});
+
 // Middleware de erro
 app.use((error, req, res, next) => {
   console.error(' Erro geral:', error);
