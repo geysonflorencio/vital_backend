@@ -145,22 +145,24 @@ class AuthController {
   // Excluir usuário
   static async excluirUsuario(req, res, next) {
     try {
-      const { user_id } = req.body;
+      // Aceitar múltiplos aliases vindos da validação anterior
+      const { user_id, id, userId } = req.body;
+      const finalUserId = user_id || id || userId;
 
-      if (!user_id) {
-        throw new AppError('ID do usuário é obrigatório', 400, 'MISSING_USER_ID');
+      if (!finalUserId) {
+        throw new AppError('ID do usuário é obrigatório (user_id, id ou userId)', 400, 'MISSING_USER_ID');
       }
 
       Logger.info('Tentativa de exclusão de usuário', { 
-        user_id,
+        received: { user_id, id, userId },
+        resolved_user_id: finalUserId,
         admin_ip: req.ip 
       });
 
-      // Usar o método de exclusão otimizado que já busca o perfil
-      const result = await SupabaseService.deleteUser(user_id);
+      const result = await SupabaseService.deleteUser(finalUserId);
 
       Logger.security('Usuário excluído com sucesso', {
-        deleted_user_id: user_id,
+        deleted_user_id: finalUserId,
         admin_ip: req.ip,
         result: result
       });
@@ -168,18 +170,15 @@ class AuthController {
       res.json({
         success: true,
         message: 'Usuário excluído com sucesso',
-        data: {
-          deleted_user_id: user_id
-        }
+        data: { deleted_user_id: finalUserId }
       });
 
     } catch (error) {
       console.log('❌ [DEBUG] Erro na exclusão de usuário:', error);
       console.log('❌ [DEBUG] Stack trace:', error.stack);
-      
       Logger.error('Erro na exclusão de usuário', {
         error: error.message,
-        user_id: req.body?.user_id,
+        body: req.body,
         ip: req.ip
       });
       next(error);

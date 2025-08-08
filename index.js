@@ -216,55 +216,11 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
-// Excluir usuário - rota específica que o frontend está chamando
-app.delete('/api/excluir-usuario', async (req, res) => {
-  try {
-    // Aceitar tanto userId, id quanto user_id para compatibilidade
-    const { userId, id, user_id } = req.body;
-    const userIdToDelete = userId || id || user_id;
-    
-    console.log('🗑️ Excluindo usuário:', userIdToDelete);
-    console.log('📋 Body recebido:', req.body);
-    
-    if (!userIdToDelete) {
-      return res.status(400).json({
-        error: 'ID do usuário é obrigatório (envie userId, id ou user_id)'
-      });
-    }
-    
-    // Primeiro, deletar da tabela profiles
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userIdToDelete);
-
-    if (profileError) {
-      console.error('❌ Erro ao deletar perfil:', profileError);
-      throw profileError;
-    }
-    
-    // Depois, deletar da autenticação do Supabase
-    const { error: authError } = await supabase.auth.admin.deleteUser(userIdToDelete);
-    
-    if (authError) {
-      console.error('⚠️ Aviso: Erro ao deletar da auth (perfil já foi deletado):', authError.message);
-      // Não vamos falhar aqui porque o perfil já foi deletado
-    }
-    
-    console.log('✅ Usuário excluído com sucesso:', userIdToDelete);
-    res.json({ 
-      success: true,
-      message: "Usuário excluído com sucesso" 
-    });
-    
-  } catch (error) {
-    console.error('💥 Erro ao excluir usuário:', error);
-    res.status(500).json({
-      error: 'Erro ao excluir usuário',
-      details: error.message
-    });
-  }
-});
+// REMOVIDO: Rota duplicada /api/excluir-usuario
+// A exclusão agora é tratada na arquitetura modular em:
+//   DELETE /api/auth/excluir-usuario (principal)
+//   DELETE /api/excluir-usuario (alias legacy definido em routes/index.js)
+// Mantido aqui apenas o comentário para evitar reintrodução acidental.
 
 // Middleware de erro
 app.use((error, req, res, next) => {

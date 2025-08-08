@@ -17,11 +17,18 @@ const schemas = {
     email: Joi.string().email().required(),
     password: Joi.string().min(6).max(128).required()
   }),
-
-  // Validação para excluir usuário
+  
+  // Validação para excluir usuário (aceita múltiplos aliases)
   excluirUsuario: Joi.object({
-    user_id: Joi.string().uuid().required()
-  }),
+    user_id: Joi.string().uuid().optional(),
+    id: Joi.string().uuid().optional(),
+    userId: Joi.string().uuid().optional()
+  }).custom((value, helpers) => {
+    if (!value.user_id && !value.id && !value.userId) {
+      return helpers.error('any.missing');
+    }
+    return value;
+  }, 'User ID aliases validation'),
 
   // Validação para solicitação
   criarSolicitacao: Joi.object({
