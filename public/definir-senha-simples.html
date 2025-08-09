@@ -249,7 +249,10 @@
             console.log('📧 Email detectado:', email);
             
             if (!email) {
-                showMessage('Email não foi detectado automaticamente. Verifique se o link do email está correto.', 'error');
+                showMessage('⚠️ Token inválido ou expirado. Por favor, solicite um novo link de redefinição de senha.', 'error');
+                setTimeout(() => {
+                    voltarParaLogin();
+                }, 3000);
                 return false;
             }
             
