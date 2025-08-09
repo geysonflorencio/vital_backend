@@ -116,6 +116,120 @@ app.delete('/api/excluir-usuario', async (req, res) => {
   }
 });
 
+// ROTA POST CADASTRAR USUÁRIO - IMPLEMENTAÇÃO DIRETA
+app.post('/api/cadastrar-usuario', async (req, res) => {
+  try {
+    console.log('👤 POST /api/cadastrar-usuario chamado');
+    console.log('Body recebido:', req.body);
+
+    const { nome, email, role, hospital_id } = req.body;
+
+    // Validação básica
+    if (!nome || !email || !role) {
+      return res.status(400).json({
+        error: 'Nome, email e role são obrigatórios',
+        required: ['nome', 'email', 'role'],
+        optional: ['hospital_id']
+      });
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'Email inválido',
+        email: email
+      });
+    }
+
+    console.log(`👥 Criando usuário: ${nome} (${email}) - Role: ${role}`);
+
+    // 1. Criar usuário na autenticação do Supabase
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: email,
+      password: Math.random().toString(36).slice(-8), // Senha temporária
+      email_confirm: true,
+      user_metadata: {
+        nome_completo: nome,
+        role: role
+      }
+    });
+
+    if (authError) {
+      console.error('❌ Erro ao criar usuário na auth:', authError);
+      return res.status(400).json({
+        error: 'Erro ao criar usuário: ' + authError.message
+      });
+    }
+
+    console.log('✅ Usuário criado na auth:', authUser.user.id);
+
+    // 2. Criar perfil do usuário na tabela profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authUser.user.id,
+        nome_completo: nome,
+        email: email,
+        role: role,
+        hospital_id: hospital_id || null,
+        ativo: true
+      })
+      .select()
+      .single();
+
+    if (profileError) {
+      console.error('❌ Erro ao criar perfil:', profileError);
+      // Tentar remover o usuário da auth se o perfil falhar
+      await supabase.auth.admin.deleteUser(authUser.user.id);
+      return res.status(500).json({
+        error: 'Erro ao criar perfil do usuário',
+        details: profileError.message
+      });
+    }
+
+    console.log('✅ Perfil criado:', profile.id);
+
+    // 3. Criar vínculo com hospital se fornecido
+    if (hospital_id) {
+      const { error: hospitalError } = await supabase
+        .from('user_hospitals')
+        .insert({
+          user_id: authUser.user.id,
+          hospital_id: hospital_id
+        });
+
+      if (hospitalError) {
+        console.warn('⚠️ Erro ao vincular hospital:', hospitalError);
+      } else {
+        console.log('✅ Usuário vinculado ao hospital:', hospital_id);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Usuário cadastrado com sucesso!',
+      data: {
+        id: authUser.user.id,
+        email: email,
+        nome_completo: nome,
+        role: role,
+        hospital_id: hospital_id,
+        ativo: true
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('💥 Erro ao cadastrar usuário:', error);
+    res.status(500).json({
+      error: 'Erro interno ao cadastrar usuário',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
