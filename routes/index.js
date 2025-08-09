@@ -31,13 +31,6 @@ router.get('/health', (req, res) => {
 // Rotas de autenticação e usuários
 router.use('/auth', authRoutes);
 
-// Alias legacy para DELETE /api/excluir-usuario (mantém compatibilidade com frontend antigo)
-router.delete('/excluir-usuario', (req, res, next) => {
-  // Encaminhar para nova rota padronizada /api/auth/excluir-usuario
-  req.url = '/excluir-usuario';
-  return authRoutes.handle(req, res, next);
-});
-
 // Rotas de solicitações  
 router.use('/solicitacoes', solicitacoesRoutes);
 
@@ -50,8 +43,6 @@ router.get('/docs', (req, res) => {
       'POST /api/auth/cadastrar-usuario',
       'POST /api/auth/definir-senha-inicial', 
       'GET /api/auth/usuarios',
-      'DELETE /api/auth/excluir-usuario',
-      'DELETE /api/excluir-usuario (legacy alias)',
       'POST /api/solicitacoes',
       'GET /api/solicitacoes',
       'GET /api/solicitacoes/:id',
