@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Definir Senha - VITAL TRR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+        
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #4f46e5;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .message {
+            padding: 16px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .message.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .message.info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+        
+        .btn-secondary {
+            color: #6b7280;
+            background: none;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: underline;
+        }
+        
+        .btn-secondary:hover {
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">V</div>
+        
+        <h1>Definir Senha</h1>
+        <p class="subtitle">Crie sua senha para acessar o sistema VITAL TRR</p>
+        
+        <div id="message-container"></div>
+        
+        <form id="senha-form">
+            <div class="form-group">
+                <label for="senha">Nova Senha</label>
+                <input type="password" id="senha" placeholder="Digite sua nova senha" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmar">Confirmar Senha</label>
+                <input type="password" id="confirmar" placeholder="Confirme sua nova senha" required minlength="6">
+            </div>
+            
+            <button type="submit" class="btn-primary" id="btn-definir">
+                Definir Senha
+            </button>
+        </form>
+        
+        <button type="button" class="btn-secondary" onclick="voltarParaLogin()">
+            Voltar para o Login
+        </button>
+    </div>
+
+    <script>
+        // 🎯 VERSÃO SUPER SIMPLIFICADA - APENAS BACKEND
+        let loading = false;
+        
+        // Função para mostrar mensagens
+        function showMessage(text, type = 'info') {
+            const container = document.getElementById('message-container');
+            container.innerHTML = `<div class="message ${type}">${text}</div>`;
+            console.log(`[${type.toUpperCase()}] ${text}`);
+        }
+        
+        // Função para definir loading
+        function setLoading(isLoading) {
+            loading = isLoading;
+            const button = document.getElementById('btn-definir');
+            const inputs = document.querySelectorAll('input');
+            
+            button.disabled = isLoading;
+            button.textContent = isLoading ? 'Definindo...' : 'Definir Senha';
+            
+            inputs.forEach(input => {
+                input.disabled = isLoading;
+            });
+        }
+        
+        // 🔑 Extração do email do token JWT
+        function getEmailFromToken() {
+            console.log('🔍 Tentando extrair email dos tokens...');
+            
+            try {
+                const urlParams = new URLSearchParams(window.location.hash.substring(1));
+                const accessToken = urlParams.get('access_token');
+                
+                if (accessToken) {
+                    console.log('🔑 Token encontrado, tentando decodificar...');
+                    
+                    // Decodificar JWT manualmente
+                    const payload = JSON.parse(atob(accessToken.split('.')[1]));
+                    console.log('📧 Payload do token:', payload);
+                    
+                    if (payload.email) {
+                        console.log('✅ Email encontrado no token:', payload.email);
+                        return payload.email;
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Erro ao decodificar token:', error);
+            }
+            
+            console.log('ℹ️ Email não encontrado automaticamente');
+            return null;
+        }
+        
+        // 🚀 FUNÇÃO PRINCIPAL - APENAS BACKEND
+        async function definirSenha(senha) {
+            console.log('🚀 Iniciando definição de senha...');
+            
+            // Extrair email do token
+            const email = getEmailFromToken();
+            console.log('📧 Email detectado:', email);
+            
+            if (!email) {
+                showMessage('Email não foi detectado automaticamente. Verifique se o link do email está correto.', 'error');
+                return false;
+            }
+            
+            try {
+                console.log('✅ Usando backend direto');
+                
+                const response = await fetch('https://vital-backend-eta.vercel.app/api/definir-senha-inicial', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        email: email,
+                        password: senha 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('🎉 Senha definida com sucesso!');
+                    showMessage('Senha definida com sucesso! Redirecionando para o login...', 'success');
+                    
+                    setTimeout(() => {
+                        voltarParaLogin();
+                    }, 2000);
+                    
+                    return true;
+                } else {
+                    throw new Error(result.message || 'Erro no servidor');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro no backend:', error.message);
+                showMessage(`Erro ao definir senha: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // 🔄 Voltar para o login
+        function voltarParaLogin() {
+            console.log('🔄 Redirecionando para login...');
+            window.location.href = '/';
+        }
+        
+        // 📝 Event listener do formulário
+        document.getElementById('senha-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (loading) return;
+            
+            const senha = document.getElementById('senha').value;
+            const confirmar = document.getElementById('confirmar').value;
+            
+            // Validações básicas
+            if (senha.length < 6) {
+                showMessage('❌ A senha deve ter pelo menos 6 caracteres', 'error');
+                return;
+            }
+            
+            if (senha !== confirmar) {
+                showMessage('❌ As senhas não coincidem', 'error');
+                return;
+            }
+            
+            // Processar
+            setLoading(true);
+            await definirSenha(senha);
+            setLoading(false);
+        });
+        
+        // 🔄 Inicialização da página
+        window.addEventListener('load', () => {
+            console.log('🔄 Página de definir senha carregada');
+            
+            const email = getEmailFromToken();
+            if (email) {
+                showMessage(`Sistema pronto. Email detectado: ${email}`, 'success');
+            } else {
+                showMessage('Aguardando detecção do email do token...', 'info');
+            }
+        });
+    </script>
+</body>
+</html>
