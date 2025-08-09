@@ -1,4 +1,5 @@
-// index.js - Vers�o com Supabase integrado
+// index.js - Versão com Supabase integrado
+// FORCE REDEPLOY: 2025-08-08 22:00 - Correção da rota DELETE /api/excluir-usuario
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
@@ -45,9 +46,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    database: 'supabase_connected',
-    version: '2.0.1',
-    last_update: '2025-08-08_21:15_with_post_route'
+    database: 'supabase_connected'
   });
 });
 
@@ -218,13 +217,22 @@ app.get('/api/usuarios', async (req, res) => {
   }
 });
 
+// ROTA DE TESTE PARA CONFIRMAR REDEPLOY
+app.get('/api/test-delete-route', (req, res) => {
+  res.json({ 
+    message: 'Rota de teste funcionando', 
+    timestamp: new Date().toISOString(),
+    delete_route_available: true 
+  });
+});
+
 // Rota de exclusão (ALIAS LEGACY) - necessária enquanto frontend não migra para /api/auth/excluir-usuario
 app.delete('/api/excluir-usuario', async (req, res) => {
   try {
     const { user_id, id, userId } = req.body;
     const userIdToDelete = user_id || id || userId;
 
-    console.log('🗑️ [LEGACY DELETE] Excluir usuário (alias):', { user_id, id, userId, resolved: userIdToDelete });
+    console.log('🗑️ [LEGACY] Excluir usuário (alias):', { user_id, id, userId, resolved: userIdToDelete });
 
     if (!userIdToDelete) {
       return res.status(400).json({
@@ -249,47 +257,9 @@ app.delete('/api/excluir-usuario', async (req, res) => {
       console.warn('⚠️ Erro ao deletar na auth (perfil já removido):', authError.message);
     }
 
-    res.json({ success: true, message: 'Usuário excluído com sucesso (legacy DELETE)', method: 'DELETE' });
+    res.json({ success: true, message: 'Usuário excluído com sucesso (legacy alias)' });
   } catch (error) {
-    console.error('💥 Erro ao excluir usuário (legacy DELETE):', error);
-    res.status(500).json({ error: 'Erro ao excluir usuário', details: error.message });
-  }
-});
-
-// ROTA POST ALTERNATIVA - Fallback para problemas do Vercel com DELETE
-app.post('/api/excluir-usuario', async (req, res) => {
-  try {
-    const { user_id, id, userId } = req.body;
-    const userIdToDelete = user_id || id || userId;
-
-    console.log('🗑️ [LEGACY POST] Excluir usuário (fallback):', { user_id, id, userId, resolved: userIdToDelete });
-
-    if (!userIdToDelete) {
-      return res.status(400).json({
-        error: 'ID do usuário é obrigatório (user_id, id ou userId)'
-      });
-    }
-
-    // Deletar profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userIdToDelete);
-
-    if (profileError) {
-      console.error('❌ Erro ao deletar perfil (legacy POST):', profileError);
-      throw profileError;
-    }
-
-    // Deletar auth
-    const { error: authError } = await supabase.auth.admin.deleteUser(userIdToDelete);
-    if (authError) {
-      console.warn('⚠️ Erro ao deletar na auth (perfil já removido):', authError.message);
-    }
-
-    res.json({ success: true, message: 'Usuário excluído com sucesso (legacy POST)', method: 'POST' });
-  } catch (error) {
-    console.error('💥 Erro ao excluir usuário (legacy POST):', error);
+    console.error('💥 Erro ao excluir usuário (legacy):', error);
     res.status(500).json({ error: 'Erro ao excluir usuário', details: error.message });
   }
 });
