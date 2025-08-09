@@ -42,8 +42,8 @@ const getEmailRedirectURL = () => {
  */
 const getPasswordRedirectURL = () => {
   const baseURL = getEmailRedirectURL()
-  // Redirecionar para página que existe no servidor
-  return `${baseURL}definir-senha.html`
+  // EMERGÊNCIA: Usar URL alternativa para bypass do cache
+  return `${baseURL}definir-senha-v2.html`
 }
 
 /**
