@@ -17,18 +17,11 @@ const schemas = {
     email: Joi.string().email().required(),
     password: Joi.string().min(6).max(128).required()
   }),
-  
-  // Validação para excluir usuário (aceita múltiplos aliases)
+
+  // Validação para excluir usuário
   excluirUsuario: Joi.object({
-    user_id: Joi.string().uuid().optional(),
-    id: Joi.string().uuid().optional(),
-    userId: Joi.string().uuid().optional()
-  }).custom((value, helpers) => {
-    if (!value.user_id && !value.id && !value.userId) {
-      return helpers.error('any.missing');
-    }
-    return value;
-  }, 'User ID aliases validation'),
+    user_id: Joi.string().uuid().required()
+  }),
 
   // Validação para solicitação
   criarSolicitacao: Joi.object({
@@ -57,6 +50,15 @@ const validateRequest = (schemaName, target = 'body') => {
 
     const data = target === 'params' ? req.params : 
                   target === 'query' ? req.query : req.body;
+
+    // Suporte a aliases para exclusão de usuário (compatibilidade legado)
+    if (schemaName === 'excluirUsuario' && data && typeof data === 'object') {
+      if (!data.user_id) {
+        if (data.id) data.user_id = data.id;
+        else if (data.userId) data.user_id = data.userId;
+        else if (data.user_id === undefined && data.userID) data.user_id = data.userID;
+      }
+    }
 
     const { error, value } = schema.validate(data, {
       abortEarly: false,
