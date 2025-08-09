@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const { getPasswordRedirectURL, logURLConfiguration } = require('./utils/urlUtils');
 
 const app = express();
 
@@ -27,6 +28,9 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJ
 
 console.log('🔧 Inicializando Supabase...', { url: supabaseUrl });
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Log da configuração de URLs
+logURLConfiguration();
 
 // Rota raiz
 app.get('/', (req, res) => {
@@ -144,11 +148,10 @@ app.post('/api/cadastrar-usuario', async (req, res) => {
 
     console.log(`👥 Criando usuário: ${nome} (${email}) - Role: ${role}`);
 
-    // 1. Criar usuário na autenticação do Supabase
+    // 1. Criar usuário na autenticação do Supabase com email de convite
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: email,
-      password: Math.random().toString(36).slice(-8), // Senha temporária
-      email_confirm: true,
+      email_confirm: false, // Não confirmar automaticamente para forçar definição de senha
       user_metadata: {
         nome_completo: nome,
         role: role
@@ -163,6 +166,33 @@ app.post('/api/cadastrar-usuario', async (req, res) => {
     }
 
     console.log('✅ Usuário criado na auth:', authUser.user.id);
+
+    // 2. Enviar email de convite para definir senha
+    console.log('📧 Tentando enviar email de convite...');
+    const redirectURL = getPasswordRedirectURL();
+    console.log('🔗 URL de redirecionamento:', redirectURL);
+    
+    const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: redirectURL,
+      data: {
+        nome_completo: nome,
+        role: role,
+        user_id: authUser.user.id
+      }
+    });
+
+    if (inviteError) {
+      console.error('❌ ERRO ao enviar email de convite:', inviteError);
+      console.error('📧 Detalhes do erro:', {
+        code: inviteError.code,
+        message: inviteError.message,
+        details: inviteError.details || 'Sem detalhes adicionais'
+      });
+      // Não falhar a criação por causa do email, apenas avisar
+    } else {
+      console.log('✅ Email de convite enviado com sucesso para:', email);
+      console.log('📬 Dados do envio:', inviteData);
+    }
 
     // 2. Criar perfil do usuário na tabela profiles
     const { data: profile, error: profileError } = await supabase
@@ -208,14 +238,15 @@ app.post('/api/cadastrar-usuario', async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Usuário cadastrado com sucesso!',
+      message: 'Usuário cadastrado com sucesso! Email de convite enviado.',
       data: {
         id: authUser.user.id,
         email: email,
         nome_completo: nome,
         role: role,
         hospital_id: hospital_id,
-        ativo: true
+        ativo: true,
+        email_enviado: !inviteError
       },
       timestamp: new Date().toISOString()
     });
@@ -224,6 +255,63 @@ app.post('/api/cadastrar-usuario', async (req, res) => {
     console.error('💥 Erro ao cadastrar usuário:', error);
     res.status(500).json({
       error: 'Erro interno ao cadastrar usuário',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ROTA POST DEFINIR SENHA MANUAL - SOLUÇÃO PARA PROBLEMAS DE EMAIL
+app.post('/api/definir-senha-manual', async (req, res) => {
+  try {
+    console.log('🔐 POST /api/definir-senha-manual chamado');
+    console.log('Body recebido:', req.body);
+
+    const { user_id, email, senha } = req.body;
+
+    // Validação básica
+    if (!user_id || !senha) {
+      return res.status(400).json({
+        error: 'user_id e senha são obrigatórios',
+        required: ['user_id', 'senha']
+      });
+    }
+
+    // Validar senha (mínimo 6 caracteres)
+    if (senha.length < 6) {
+      return res.status(400).json({
+        error: 'Senha deve ter pelo menos 6 caracteres'
+      });
+    }
+
+    console.log(`🔐 Definindo senha manual para usuário: ${user_id}`);
+
+    // 1. Atualizar senha no Supabase Auth
+    const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(user_id, {
+      password: senha,
+      email_confirm: true // Confirmar email automaticamente
+    });
+
+    if (updateError) {
+      console.error('❌ Erro ao atualizar senha:', updateError);
+      return res.status(400).json({
+        error: 'Erro ao definir senha: ' + updateError.message
+      });
+    }
+
+    console.log('✅ Senha definida com sucesso:', user_id);
+
+    res.json({
+      success: true,
+      message: 'Senha definida com sucesso! Usuário pode fazer login.',
+      user_id: user_id,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('💥 Erro ao definir senha manual:', error);
+    res.status(500).json({
+      error: 'Erro interno ao definir senha',
       message: error.message,
       timestamp: new Date().toISOString()
     });
