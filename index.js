@@ -45,7 +45,9 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    database: 'supabase_connected'
+    database: 'supabase_connected',
+    version: '2.0.1',
+    last_update: '2025-08-08_21:15_with_post_route'
   });
 });
 
