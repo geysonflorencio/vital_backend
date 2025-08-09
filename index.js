@@ -1,16 +1,27 @@
-// index.js - Versão com Supabase integrado
-// FORCE REDEPLOY: 2025-08-08 22:00 - Correção da rota DELETE /api/excluir-usuario
+// index.js - VITAL API com arquitetura híbrida (monolítica + modular)
+// Refatorado em 2025-08-08 para integrar rotas modulares e manter compatibilidade
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 
-// Importar rotas
+// Importar rotas existentes
 const hospitaisRoutes = require('./routes/hospitais');
 const usuariosRoutes = require('./routes/usuarios');
 
+// Importar rotas modulares (se existirem)
+let authRoutes = null;
+let apiRoutes = null;
+try {
+  authRoutes = require('./routes/auth');
+  apiRoutes = require('./routes/index');
+  console.log('✅ Rotas modulares carregadas');
+} catch (error) {
+  console.log('⚠️ Rotas modulares não encontradas, usando apenas monolíticas');
+}
+
 const app = express();
 
-// Configura��o do Supabase
+// Configuração do Supabase
 const supabaseUrl = process.env.SUPABASE_URL || 'https://aeysoqtbencykavivgoe.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFleXNvcXRiZW5jeWthdml2Z29lIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTE4MTY1OSwiZXhwIjoyMDY0NzU3NjU5fQ.g64X3iebdB_TY_FWd6AI8mlej4uKMrKiFLG11z6hZlQ';
 
@@ -18,7 +29,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // CORS configurado para appvital.com.br
 app.use(cors({
-  origin: ['https://appvital.com.br', 'https://www.appvital.com.br', 'http://localhost:3000'],
+  origin: ['https://appvital.com.br', 'https://www.appvital.com.br', 'http://localhost:3000', 'https://vital-deploy.vercel.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -26,7 +37,16 @@ app.use(cors({
 
 app.use(express.json());
 
-// Registrar rotas
+// Montar rotas modulares primeiro (se disponíveis)
+if (apiRoutes && authRoutes) {
+  console.log('🔧 Montando rotas modulares...');
+  app.use('/api', apiRoutes);
+  
+  // Alias direto para auth routes (redundância)
+  app.use('/api/auth', authRoutes);
+}
+
+// Registrar rotas monolíticas existentes
 app.use('/api/hospitais', hospitaisRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 
@@ -215,15 +235,6 @@ app.get('/api/usuarios', async (req, res) => {
       details: error.message
     });
   }
-});
-
-// ROTA DE TESTE PARA CONFIRMAR REDEPLOY
-app.get('/api/test-delete-route', (req, res) => {
-  res.json({ 
-    message: 'Rota de teste funcionando', 
-    timestamp: new Date().toISOString(),
-    delete_route_available: true 
-  });
 });
 
 // Rota de exclusão (ALIAS LEGACY) - necessária enquanto frontend não migra para /api/auth/excluir-usuario
