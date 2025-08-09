@@ -42,8 +42,8 @@ const getEmailRedirectURL = () => {
  */
 const getPasswordRedirectURL = () => {
   const baseURL = getEmailRedirectURL()
-  // Redirecionar para página que processa o token de convite
-  return `${baseURL}definir-senha-simples.html`
+  // Redirecionar para página que existe no servidor
+  return `${baseURL}definir-senha.html`
 }
 
 /**
