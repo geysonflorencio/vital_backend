@@ -38,12 +38,21 @@ const getEmailRedirectURL = () => {
 
 /**
  * Gera URL de redirecionamento para definir senha inicial
+<<<<<<< HEAD
  * Direciona para componente React que processa tokens de convite
  */
 const getPasswordRedirectURL = () => {
   const baseURL = getEmailRedirectURL()
   // ✅ CORREÇÃO: Usar componente React ao invés de HTML estático
   return `${baseURL}#/definir-senha`
+=======
+ * Direciona para página que processa tokens de convite
+ */
+const getPasswordRedirectURL = () => {
+  const baseURL = getEmailRedirectURL()
+  // EMERGÊNCIA: Usar URL alternativa para bypass do cache
+  return `${baseURL}definir-senha-v2.html`
+>>>>>>> 44306ce2fb024722a5a570127d5d2551f549aabb
 }
 
 /**
