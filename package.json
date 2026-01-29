@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "vital-backend",
-  "version": "2.0.0",
+  "version": "3.1.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -11,7 +11,8 @@
     "@supabase/supabase-js": "^2.39.0",
     "helmet": "^7.0.0",
     "express-rate-limit": "^6.7.0",
-    "joi": "^17.9.0"
+    "joi": "^17.9.0",
+    "web-push": "^3.6.7"
   },
   "engines": {
     "node": ">=18.0.0"
